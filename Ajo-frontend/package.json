@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "npm --prefix src/contracts/ajo-client install && npm --prefix src/contracts/ajo-client run build"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.7.5",
