@@ -22,6 +22,7 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
   const [members, setMembers] = useState<string[]>([])
   const [defaulted, setDefaulted] = useState<string[]>([])
   const [received, setReceived] = useState<string[]>([])
+  const [paid, setPaid] = useState<string[]>([])
   const [reputation, setReputation] = useState<number | null>(null)
 
   const [amount, setAmount] = useState('100')
@@ -34,6 +35,7 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
 
   const isMember = address !== null && members.includes(address)
   const isDefaulted = address !== null && defaulted.includes(address)
+  const hasPaid = address !== null && paid.includes(address)
   const upNext = members.find((m) => !defaulted.includes(m) && !received.includes(m)) ?? null
   const deadline = circle ? new Date(Number(circle.round_start + circle.round_duration) * 1000) : null
 
@@ -52,16 +54,18 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
 
   async function loadCircle(id: number, addr: string | null) {
     const client = getAjoClient(addr ?? undefined)
-    const [circleTx, membersTx, defaultedTx, receivedTx] = await Promise.all([
+    const [circleTx, membersTx, defaultedTx, receivedTx, paidTx] = await Promise.all([
       client.get_circle({ circle_id: BigInt(id) }),
       client.get_members({ circle_id: BigInt(id) }),
       client.get_defaulted({ circle_id: BigInt(id) }),
       client.get_received({ circle_id: BigInt(id) }),
+      client.get_paid({ circle_id: BigInt(id) }),
     ])
     setCircle(circleTx.result)
     setMembers(membersTx.result)
     setDefaulted(defaultedTx.result)
     setReceived(receivedTx.result)
+    setPaid(paidTx.result)
   }
 
   async function loadReputation(addr: string) {
@@ -95,6 +99,7 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
     setMembers([])
     setDefaulted([])
     setReceived([])
+    setPaid([])
     setReputation(null)
     setStatus(null)
   }
@@ -280,6 +285,7 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
                         {m === upNext && <span className="tag tag-accent">up next</span>}
                         {received.includes(m) && <span className="tag tag-success">paid out</span>}
                         {defaulted.includes(m) && <span className="tag tag-error">defaulted</span>}
+                        {!defaulted.includes(m) && paid.includes(m) && <span className="tag">paid this round</span>}
                       </motion.li>
                     ))}
                   </AnimatePresence>
@@ -301,10 +307,10 @@ function AjoPanel({ circleId, onCircleCreated }: AjoPanelProps) {
                 type="button"
                 className="btn btn-secondary"
                 onClick={handleDeposit}
-                disabled={pending !== null || !isMember || isDefaulted || circle?.completed}
+                disabled={pending !== null || !isMember || isDefaulted || hasPaid || circle?.completed}
                 whileTap={tapFeedback}
               >
-                {pending === 'deposit' ? 'Depositing…' : 'Deposit this round'}
+                {pending === 'deposit' ? 'Depositing…' : hasPaid ? 'Already deposited this round' : 'Deposit this round'}
               </motion.button>
               <motion.button
                 type="button"
